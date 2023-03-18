@@ -16,6 +16,7 @@ import com.palash.mvvmwithhiltexample.databinding.FragmentLoginBinding
 import com.palash.mvvmwithhiltexample.models.login.request.SigninRequest
 import com.palash.mvvmwithhiltexample.utils.NetworkResult
 import com.palash.mvvmwithhiltexample.view_model.LoginViewModel
+import com.palash.mvvmwithhiltexample.view_model.MyViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -25,6 +26,7 @@ class LoginFragment : Fragment() {
     private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
     private val authViewModel by viewModels<LoginViewModel>()
+    private val networkViewModel by viewModels<MyViewModel>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,10 +35,21 @@ class LoginFragment : Fragment() {
         // Inflate the layout for this fragment
         _binding = FragmentLoginBinding.inflate(inflater, container, false)
         return binding.root
+
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        networkViewModel.networkLoss.observe(viewLifecycleOwner) {
+            Toast.makeText(context, "Network connection lost", Toast.LENGTH_SHORT).show()
+        }
+        networkViewModel.networkSuccess.observe(viewLifecycleOwner) {
+            Toast.makeText(context, "Network connection establish", Toast.LENGTH_SHORT).show()
+        }
+
+
+
         binding.btnRegis.setOnClickListener {
             val validationResult = validateUserInput()
             if (validationResult.first) {
@@ -53,12 +66,12 @@ class LoginFragment : Fragment() {
 
     }
 
-    private fun validateUserInput() : Pair<Boolean, String>{
+    private fun validateUserInput(): Pair<Boolean, String> {
         val userRequest = getUserRequest()
         return authViewModel.validateLoginCredentials(userRequest.email, userRequest.password)
     }
 
-    private fun getUserRequest() : SigninRequest{
+    private fun getUserRequest(): SigninRequest {
         val email = binding.edtEmail.text.toString()
         val password = binding.edtPassword.text.toString()
 
@@ -66,9 +79,9 @@ class LoginFragment : Fragment() {
     }
 
     private fun bindObserver() {
-        viewLifecycleOwner.lifecycleScope.launch{
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED){
-                authViewModel.signInUserResponseStateFlow.collect{
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                authViewModel.signInUserResponseStateFlow.collect {
                     binding.progressBar.isVisible = false
                     when (it) {
                         is NetworkResult.Success -> {
@@ -85,7 +98,8 @@ class LoginFragment : Fragment() {
                             binding.progressBar.isVisible = true
                         }
                         else -> {
-                            Toast.makeText(context, "Something app error", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Something app error", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
                 }
